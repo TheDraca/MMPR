@@ -27,6 +27,10 @@ def GetDevicesToDo(Filename="MMPR.json"):
     with open(Filename, "r") as JSONFile:
         return (json.load(JSONFile)["DevicesToDo"])
 
+def GetDevicesDone(Filename="MMPR.json"):
+    with open(Filename, "r") as JSONFile:
+        return (json.load(JSONFile)["DevicesDone"])
+
 def SaveFoundDevice(DeviceName, AgentID, Filename="MMPR.json"):
     with open(Filename, "r+") as JSONFile:
         Contents=GetCurrentContents(Filename)
