@@ -11,13 +11,20 @@ PolicyID=JsonControl.GetSetting("PolicyID")
 
 
 #Check if json file exits, if it doesn't build it
-if os.path.exists("MMPR.json") == True:
-    print("MMPR Json already exists, will resume that")
-else:
+if os.path.exists("MMPR.json") == False:
     #Create a empty device json file and wait for completion 
     while os.path.exists("MMPR.json") == False:
         JsonControl.GenJSONFile()
     print("Please fill out the JSON fill then re-run this script")
+    exit()
+elif os.path.exists("MMPR.json") == True and len(JsonControl.GetDevicesToDo())  != 0:
+    print("MMPR Json already exists with devices left, will resume that")
+elif len(JsonControl.GetDevicesToDo())  == 0 and len(JsonControl.GetDevicesDone()) !=0:
+    print("You have a json file with a previous run but it looks like there are no devices left to do. Exiting")
+    exit()
+else:
+   print("Looks like you have no previous attempts, starting a new session")
+
 
 #Populate json with all the devices in the given policy
 for Device in AddigyAPI.GetAllDevicesInPolicy(ClientID,ClientSecret,PolicyID):
