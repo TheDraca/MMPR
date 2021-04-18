@@ -15,7 +15,7 @@ if os.path.exists("MMPR.json") == False:
     #Create a empty device json file and wait for completion 
     while os.path.exists("MMPR.json") == False:
         JsonControl.GenJSONFile()
-    print("Please fill out the JSON fill then re-run this script")
+    print("Please fill out the JSON file then re-run this script")
     exit()
 elif os.path.exists("MMPR.json") == True and len(JsonControl.GetDevicesToDo())  != 0:
     print("MMPR Json already exists with devices left, will resume that")
@@ -48,4 +48,4 @@ while len(JsonControl.GetDevicesToDo())  != 0:
             else:
                 print("Failure for device:" +OnlineDevice["Device Name"])
                 with open("Errors.txt", "a+") as ErrorFile:
-                    ErrorFile.write("{0}\n".format(APIResponse))
+                    ErrorFile.write("{0} - {1}\n".format(OnlineDevice["Device Name"],APIResponse))
