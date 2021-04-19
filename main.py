@@ -24,11 +24,10 @@ elif len(JsonControl.GetDevicesToDo())  == 0 and len(JsonControl.GetDevicesDone(
     exit()
 else:
    print("Looks like you have no previous attempts, starting a new session")
-
-
-#Populate json with all the devices in the given policy
-for Device in AddigyAPI.GetAllDevicesInPolicy(ClientID,ClientSecret,PolicyID):
-    JsonControl.SaveFoundDevice(Device["Device Name"],Device["agentid"])
+   
+   #Populate json with all the devices in the given policy
+   for Device in AddigyAPI.GetAllDevicesInPolicy(ClientID,ClientSecret,PolicyID):
+       JsonControl.SaveFoundDevice(Device["Device Name"],Device["agentid"])
 
 #Main loop, will run until there are no devices left to do.
 while len(JsonControl.GetDevicesToDo())  != 0:
