@@ -2,14 +2,6 @@ import os
 import JsonControl
 import AddigyAPI
 
-#Store all our changeable info for later
-ClientID=JsonControl.GetSetting("ClientID")
-ClientSecret=JsonControl.GetSetting("ClientSecret")
-Username=JsonControl.GetSetting("Username")
-Password=JsonControl.GetSetting("Password")
-PolicyID=JsonControl.GetSetting("PolicyID")
-
-
 #Check if json file exits, if it doesn't build it
 if os.path.exists("MMPR.json") == False:
     #Create a empty device json file and wait for completion 
@@ -24,10 +16,19 @@ elif len(JsonControl.GetDevicesToDo())  == 0 and len(JsonControl.GetDevicesDone(
     exit()
 else:
    print("Looks like you have no previous attempts, starting a new session")
+
+
+#Store all our changeable info for later
+ClientID=JsonControl.GetSetting("ClientID")
+ClientSecret=JsonControl.GetSetting("ClientSecret")
+Username=JsonControl.GetSetting("Username")
+Password=JsonControl.GetSetting("Password")
+PolicyID=JsonControl.GetSetting("PolicyID")
    
-   #Populate json with all the devices in the given policy
-   for Device in AddigyAPI.GetAllDevicesInPolicy(ClientID,ClientSecret,PolicyID):
-       JsonControl.SaveFoundDevice(Device["Device Name"],Device["agentid"])
+#Populate json with all the devices in the given policy
+for Device in AddigyAPI.GetAllDevicesInPolicy(ClientID,ClientSecret,PolicyID):
+    JsonControl.SaveFoundDevice(Device["Device Name"],Device["agentid"])
+
 
 #Main loop, will run until there are no devices left to do.
 while len(JsonControl.GetDevicesToDo())  != 0:
