@@ -2,6 +2,11 @@ import os
 import JsonControl
 import AddigyAPI
 
+#Check we have the required Addigy binary
+if os.path.exists("/Library/Addigy/user-manager") != True:
+    print("This device is not in Addigy and therefore cannot use this tool")
+    exit()
+
 #Check if json file exits, if it doesn't build it
 if os.path.exists("MMPR.json") == False:
     #Create a empty device json file and wait for completion 
