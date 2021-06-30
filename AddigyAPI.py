@@ -1,7 +1,7 @@
-#02/04/21
 from requests import request
 from time import sleep
 import json
+
 
 def GetAllDevicesInPolicy(ClientID,ClientSecret,PolicyID):
     #Send our request out to the api and save what comes back as response
@@ -22,30 +22,26 @@ def GetOnlineDevices(ClientID,ClientSecret):
     #Send our request out to the api and save what comes back as response
     Response = request("GET", "https://prod.addigy.com/api/devices/online", headers=headers, data=payload)
 
-    #Return this response as a json file
-    return Response.json()
+    #Return this response as a json file but only if its not empty
+    try:
+        if len((Response.json())[0]) >0:
+            return Response.json()
+    except IndexError:
+        print("Index Error, addigy didn't return anything")
+        return ""
 
-
-def GetPasswordResetResult(ClientID,ClientSecret,AgentID,ResetResponse):
+def GetPasswordResetResult(ClientID,ClientSecret,AgentID,ActionID):
     sleep(5) #Wait a few secs for the command to run
-    #Get the action id from the rest response, by making it a json then pulling the actionid key from actionids
-    ResetResponseJSON=ResetResponse.json()
-    #Get the list that has a list inside of it, turn it into the one list and pull the id
-    ActionID=(ResetResponseJSON["actionids"][0])["actionid"]
-
-
     #Send our request out to the api and save what comes back as response
     Response = request("GET", "https://prod.addigy.com/api/devices/output?client_id={0}&client_secret={1}&actionid={2}&agentid={3}".format(ClientID,ClientSecret,ActionID,AgentID))
 
-
     #Make sure the command has finished before trying to return the output
     if str(Response.text) == '"Command not finished executing. Please try again later"':
-        sleep(10)
-        GetPasswordResetResult(ClientID,ClientSecret,AgentID,ResetResponse)
+        return "Pending"
     elif Response.json()["exitstatus"] == 0: #On a success return the word "Success" to ResetPassword if not dump the response for logging
         return "Success"
-    else:
-        return "Error with AgentID: {0} - {1}\n\n".format(AgentID, Response.text)
+    else: #If its not success or pending must be an error, return it to log
+        return (Response.text)
 
 
 def ResetPassword(ClientID,ClientSecret,AgentID,Username,HashedPassword):
@@ -68,5 +64,6 @@ def ResetPassword(ClientID,ClientSecret,AgentID,Username,HashedPassword):
 
     #Send the request off to addigy and save the response
     Response = request("POST", "https://prod.addigy.com/api/devices/commands", headers=headers, data=payload)
-    return GetPasswordResetResult(ClientID,ClientSecret,AgentID,Response)
+
+    return Response
 
