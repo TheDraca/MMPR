@@ -27,7 +27,7 @@ if os.path.exists("MMPR.json") == False:
     exit()
 elif os.path.exists("MMPR.json") == True and (len(JsonControl.GetDevicesToDo()) != 0 or len(JsonControl.GetDevicesPending()) != 0):
     LogAndPrint("---------------SESSION START---------------")
-    LogAndPrint("WARN - MMPR Json already exists with devices left, will resume that")
+    LogAndPrint("WARN - MMPR Json already exists with {0} devices left, will resume that".format(len(JsonControl.GetDevicesToDo())))
 elif len(JsonControl.GetDevicesToDo())  == 0 and len(JsonControl.GetDevicesDone()) !=0:
     print("You have a json file with a previous run but it looks like there are no devices left to do. Exiting")
     exit()
@@ -49,6 +49,7 @@ if NewAttempt == True:
     #Populate json with all the devices in the given policy
     for Device in AddigyAPI.GetAllDevicesInPolicy(ClientID,ClientSecret,PolicyID):
         JsonControl.SaveFoundDevice(Device["Device Name"],Device["agentid"])
+    LogAndPrint("INFO - {0} Devices found and marked as to do from Policy ID: {1}".format(len(JsonControl.GetDevicesToDo()),PolicyID))
 
 
 def GetActionID(ResetResponse):
@@ -120,7 +121,7 @@ while len(JsonControl.GetDevicesToDo()) != 0 or len(JsonControl.GetDevicesPendin
                 LogAndPrint("{0} - {1}".format(DeviceName,APIResponse))
                 JsonControl.ResetPendingDevice(DeviceName,AgentID)
 
-    LogAndPrint("INFO - Devices still to do, but none are avalaible waiting")
+    LogAndPrint("INFO - {0} devices still to do and {1} pending... Waiting".format(len(JsonControl.GetDevicesToDo()),len(JsonControl.GetDevicesPending())))
     sleep(int(JsonControl.GetSetting("RefreshTime")))
 
 LogAndPrint("---------------SESSION END---------------")
