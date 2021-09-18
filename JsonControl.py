@@ -6,10 +6,14 @@ def GenJSONFile(Filename="MMPR.json"):
             "Settings": {
                 "ClientID" : "",
                 "ClientSecret" : "",
-                "Username" : "LocalAccount",
-                "Password" : "SuperSecretPasswd",
                 "PolicyID" : "TargetPolicyIDHere",
-                "RefreshTime": "600"
+                "RefreshTime": "600",
+                "Username" : "LocalAccount",
+                "UseStaticPassword": 0,
+                "StaticPassword": "SuperSecretPasswd",
+                "RandomPassLength": 10,
+                "RandomPassExtraChars": "!",
+                "WriteRandPassToLogs": 1
             },
             "DevicesToDo": {},
             "DevicesPending": {},
