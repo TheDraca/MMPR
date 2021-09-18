@@ -4,6 +4,7 @@ import os
 import JsonControl
 import AddigyAPI
 
+
 #Check we have the required Addigy binary
 if os.path.exists("/Library/Addigy/user-manager") != True:
     print("This device is not in Addigy and therefore cannot use this tool")
@@ -37,12 +38,41 @@ else:
     LogAndPrint("WARN - No previous attempts detected, starting a new session")
 
 
+#Check if we're using a static password or generating random ones for each device
+if JsonControl.GetSetting("UseStaticPassword") == False:
+    import random, string #Import needed modules for GenNewPassword if random passwords are enabled
+else:
+    LogAndPrint("Static Password is enabled, the StaticPassword value in MMPR.json will be used for all passwords")
+
+
 #Store all our changeable info for later
 ClientID=JsonControl.GetSetting("ClientID")
 ClientSecret=JsonControl.GetSetting("ClientSecret")
 Username=JsonControl.GetSetting("Username")
-Password=JsonControl.GetSetting("Password")
 PolicyID=JsonControl.GetSetting("PolicyID")
+
+
+#Function for returning what password is set. The "StaticPassword" in MMPR.json is always returned if "UserStaticPassword" = 1, otherwise a random pass is generated
+def GetNewPassword(DeviceName):
+    #First check if we're only using one password for all devices, if so just return that
+    if JsonControl.GetSetting("UseStaticPassword") == True:
+        Password=JsonControl.GetSetting("StaticPassword")
+    else:
+        #Create a set of characters to be used for the random password, always includes alpha numeric then adds anything extra from RandomPassExtraChars in MMPR.json
+        RandomPassCharSet=string.ascii_letters + string.digits + JsonControl.GetSetting("RandomPassExtraChars")
+
+        RandomPassLength=JsonControl.GetSetting("RandomPassLength") #Set the desired legth of the password
+        random.seed = (os.urandom(4096)) # Set random string of 4096 characters as the seed for generation
+        
+        Password=""
+        while len(Password) < RandomPassLength:
+            #Add a random character from RandomPassCharSet to the password string in a loop until we hit the desired length
+            Password+=random.choice(RandomPassCharSet)
+        
+        if JsonControl.GetSetting("WriteRandPassToLogs") == True:
+            LogAndPrint("INFO - Random Password {0} has been generated for {1}".format(Password,DeviceName))
+    return Password
+
 
 
 if NewAttempt == True: 
@@ -69,6 +99,10 @@ while len(JsonControl.GetDevicesToDo()) != 0 or len(JsonControl.GetDevicesPendin
                 if OnlineDevice["Device Name"] in str(AddigyAPI.GetOnlineDevices(ClientID,ClientSecret)):
                     #Device is online, attempt to reset the password
                     LogAndPrint("INFO - Working on device: {0} AgentID: {1}".format(OnlineDevice["Device Name"],OnlineDevice["agentid"]))
+
+                    #Get our desired password from the GetNewPassword function
+                    Password=GetNewPassword(OnlineDevice["Device Name"])
+
                     #Hash our desired password then send it to addigy
                     HashedPassword=os.popen("/Library/Addigy/user-manager -update-password -generate-salted-sha512-pbkdf2-plist-b64 {0}".format(Password)).read()
 
