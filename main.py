@@ -94,7 +94,7 @@ def RestExpiredPassword(DeviceName,AgentID,PasswordLifeTime=JsonControl.GetSetti
     DateDiff=DateDiff.days
 
     if DateDiff>PasswordLifeTime:
-        LogAndPrint("INFO - {0}'s password is older than {1} days, moving into DevicesTodo".format(DeviceName,PasswordLifeTime))
+        LogAndPrint("INFO - {0}'s password is older than {1} days, moving into DevicesToDo".format(DeviceName,PasswordLifeTime))
         JsonControl.ResetDoneDevice(DeviceName,AgentID)
 
 
@@ -177,6 +177,14 @@ while True:
         DoneDevices=JsonControl.GetDevicesDone() #Store Dict of devices done
         for DeviceName in DoneDevices:
             RestExpiredPassword(DeviceName,DoneDevices[DeviceName][0])#Pass the device name and agent id though the reset expired password checker
+        
+        #If both password expiry and learn new devices is true then check if we can add more devices into DeviceToDo
+        if JsonControl.GetSetting("LearnNewDevices") ==True:
+            #Populate json with all the devices in the given policy
+            for Device in AddigyAPI.GetAllDevicesInPolicy(ClientID,ClientSecret,PolicyID):
+                if "macOS" in Device["System Version"] and Device["agentid"] not in str(JsonControl.GetCurrentContents()): #Ensure we only add devices that are identified as MacOS and it isn't anywhere in our json file
+                    JsonControl.SaveFoundDevice(Device["Device Name"],Device["agentid"])
+                    LogAndPrint("INFO - New device {0} found from Policy ID {1} added into DevicesToDo for next run".format(Device["Device Name"],PolicyID))
 
 
     if len(JsonControl.GetDevicesToDo()) != 0 or len(JsonControl.GetDevicesPending()) != 0:
