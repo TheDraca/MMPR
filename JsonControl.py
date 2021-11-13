@@ -15,7 +15,8 @@ def GenJSONFile(Filename="MMPR.json"):
                 "RandomPassExtraChars": "!",
                 "WriteRandPassToLogs": 1,
                 "PasswordExpiry": 1,
-                "PasswordLifeTime": 20
+                "PasswordLifeTime": 20,
+                "LearnNewDevices": 1
             },
             "DevicesToDo": {},
             "DevicesPending": {},
