@@ -22,3 +22,4 @@ The MMPR.json file will be generated on first run, here's a quick breakdown of w
 * WriteRandPassToLogs - If enabled a message will be printed and logged with the device name and the password that is being attempted to set. **CURRENTLY THE ONLY WAY TO STORE RANDOMLY GENERATED PASSWORDS**. I will in the future change this
 * PasswordExpiry - Boolean value, set to 1 to have the date a password was reset stored and checked on each loop
 * PasswordLifetime - Interger in days of how long a password can live for 
+* LearnNewDevices - Boolean, only works if PasswordExpiry is enabled. Checks Addigy and adds any new devices into DevicesToDo
