@@ -51,6 +51,12 @@ ClientSecret=JsonControl.GetSetting("ClientSecret")
 Username=JsonControl.GetSetting("Username")
 PolicyID=JsonControl.GetSetting("PolicyID")
 
+if NewAttempt == True: 
+    #Populate json with all the devices in the given policy
+    for Device in AddigyAPI.GetAllDevicesInPolicy(ClientID,ClientSecret,PolicyID):
+        if "macOS" in Device["System Version"]: #Ensure we only add devices that are identified as MacOS, iOS won't work!
+            JsonControl.SaveFoundDevice(Device["Device Name"],Device["agentid"])
+    LogAndPrint("INFO - {0} Devices found and marked as to do from Policy ID: {1}".format(len(JsonControl.GetDevicesToDo()),PolicyID))
 
 #Function for returning what password is set. The "StaticPassword" in MMPR.json is always returned if "UserStaticPassword" = 1, otherwise a random pass is generated
 def GetNewPassword(DeviceName):
@@ -73,13 +79,24 @@ def GetNewPassword(DeviceName):
             LogAndPrint("INFO - Random Password {0} has been generated for {1}".format(Password,DeviceName))
     return Password
 
+#Function for checking and reseting expired passwords
+def RestExpiredPassword(DeviceName,AgentID,PasswordLifeTime=JsonControl.GetSetting("PasswordLifeTime")):
+    #Get Reset Date of DeviceName
+    ResetDate = datetime.strptime(JsonControl.GetDoneDeviceDateReset(DeviceName),"%d/%m/%Y %H:%M:%S")
 
+    CurrentDate=datetime.now().strftime("%d/%m/%Y %H:%M:%S") #Get current date and time in a DD/MM/YYY HH/MM/SS formated string
+    CurrentDate=datetime.strptime(str(CurrentDate), "%d/%m/%Y %H:%M:%S") #Turn the above string into a datetime type
 
-if NewAttempt == True: 
-    #Populate json with all the devices in the given policy
-    for Device in AddigyAPI.GetAllDevicesInPolicy(ClientID,ClientSecret,PolicyID):
-        JsonControl.SaveFoundDevice(Device["Device Name"],Device["agentid"])
-    LogAndPrint("INFO - {0} Devices found and marked as to do from Policy ID: {1}".format(len(JsonControl.GetDevicesToDo()),PolicyID))
+    #Get Diffrence between the Current Date and the day reset
+    DateDiff = CurrentDate - ResetDate
+
+    #Turn the diffrence into just days
+    DateDiff=DateDiff.days
+
+    if DateDiff>PasswordLifeTime:
+        LogAndPrint("INFO - {0}'s password is older than {1} days, moving into DevicesTodo".format(DeviceName,PasswordLifeTime))
+        JsonControl.ResetDoneDevice(DeviceName,AgentID)
+
 
 
 def GetActionID(ResetResponse):
@@ -91,7 +108,7 @@ def GetActionID(ResetResponse):
 
 
 #Main loop, will run until there are no devices left to do.
-while len(JsonControl.GetDevicesToDo()) != 0 or len(JsonControl.GetDevicesPending()) != 0:
+while True:
     if len(JsonControl.GetDevicesToDo()) != 0: #Only do the Online Device check if there devices still left to send commands for, if not skip to checking pending commands
     #Compare Online Devices with those in the JSON file, if they are in todo list then reset the password
         for OnlineDevice in AddigyAPI.GetOnlineDevices(ClientID,ClientSecret):
@@ -104,7 +121,7 @@ while len(JsonControl.GetDevicesToDo()) != 0 or len(JsonControl.GetDevicesPendin
                     Password=GetNewPassword(OnlineDevice["Device Name"])
 
                     #Hash our desired password then send it to addigy
-                    HashedPassword=os.popen("/Library/Addigy/user-manager -update-password -generate-salted-sha512-pbkdf2-plist-b64 {0}".format(Password)).read()
+                    HashedPassword=os.popen('''/Library/Addigy/user-manager -update-password -generate-salted-sha512-pbkdf2-plist-b64="{0}"'''.format(Password)).read()
 
                     #Request the API reset the device password 
                     APIResponse=AddigyAPI.ResetPassword(ClientID,ClientSecret,OnlineDevice["agentid"],Username,HashedPassword)
@@ -124,7 +141,7 @@ while len(JsonControl.GetDevicesToDo()) != 0 or len(JsonControl.GetDevicesPendin
         
                     if APIResponse == "Success":
                         LogAndPrint("INFO - Password successfully changed for: {0} AgentID: {1}".format(OnlineDevice["Device Name"],OnlineDevice["agentid"]))
-                        JsonControl.MarkDeviceAsDone(OnlineDevice["Device Name"],OnlineDevice["agentid"],ActionID)
+                        JsonControl.MarkDeviceAsDone(OnlineDevice["Device Name"],OnlineDevice["agentid"],ActionID,datetime.now().strftime("%d/%m/%Y %H:%M:%S"))
                     elif APIResponse == "Pending":
                         LogAndPrint("INFO - Device {0} reset command is pending, will be checked later".format(OnlineDevice["Device Name"]))
                     else:
@@ -147,16 +164,32 @@ while len(JsonControl.GetDevicesToDo()) != 0 or len(JsonControl.GetDevicesPendin
 
             if Status == "Success":
                 LogAndPrint("INFO - Pending password change now successful for: {0} AgentID: {1}".format(DeviceName,AgentID))
-                JsonControl.MarkDeviceAsDone(DeviceName,AgentID,ActionID)
+                JsonControl.MarkDeviceAsDone(DeviceName,AgentID,ActionID,datetime.now().strftime("%d/%m/%Y %H:%M:%S"))
             elif Status == "Pending":
                 LogAndPrint("INFO - Device {0} reset command check came back still pending".format(DeviceName))
             else: #TODO get this to trigger when command is canceled, at the moment both pending and cancled commands return 409 with the same message
                 LogAndPrint("ERROR - Unable to check pending status for {0}, Device will be put back into TODO. See error log for more info".format(DeviceName))
-                LogAndPrint("{0} - {1}".format(DeviceName,APIResponse))
+                LogAndPrint("{0} - {1}".format(DeviceName,Status))
                 JsonControl.ResetPendingDevice(DeviceName,AgentID)
 
-    LogAndPrint("INFO - {0} devices still to do and {1} pending... Waiting".format(len(JsonControl.GetDevicesToDo()),len(JsonControl.GetDevicesPending())))
-    sleep(int(JsonControl.GetSetting("RefreshTime")))
+    #After each loop, if password expiry is enabled, move any expired devices back into ToDo
+    if JsonControl.GetSetting("PasswordExpiry") == True:
+        DoneDevices=JsonControl.GetDevicesDone() #Store Dict of devices done
+        for DeviceName in DoneDevices:
+            RestExpiredPassword(DeviceName,DoneDevices[DeviceName][0])#Pass the device name and agent id though the reset expired password checker
 
-LogAndPrint("---------------SESSION END---------------")
-LogAndPrint("No more devies left!")
+
+    if len(JsonControl.GetDevicesToDo()) != 0 or len(JsonControl.GetDevicesPending()) != 0:
+        LogAndPrint("INFO - {0} devices still to do and {1} pending... Waiting {2} secs".format(len(JsonControl.GetDevicesToDo()),len(JsonControl.GetDevicesPending()),JsonControl.GetSetting("RefreshTime")))
+        sleep(int(JsonControl.GetSetting("RefreshTime")))
+
+    else:
+        if JsonControl.GetSetting("PasswordExpiry") == True:
+            LogAndPrint("---------------SESSION PAUSE---------------")
+            LogAndPrint("INFO - All devices have had passwords reset but expiry is enabled... Waiting {0} secs".format(JsonControl.GetSetting("RefreshTime")))
+            sleep(int(JsonControl.GetSetting("RefreshTime")))
+
+        else:
+            LogAndPrint("---------------SESSION END---------------")
+            LogAndPrint("INFO  - No more devies left and passwords do not expire... Quitting")
+            break #Leave the while true loop as we're done here
