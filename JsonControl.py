@@ -13,7 +13,9 @@ def GenJSONFile(Filename="MMPR.json"):
                 "StaticPassword": "SuperSecretPasswd",
                 "RandomPassLength": 10,
                 "RandomPassExtraChars": "!",
-                "WriteRandPassToLogs": 1
+                "WriteRandPassToLogs": 1,
+                "PasswordExpiry": 1,
+                "PasswordLifeTime": 20
             },
             "DevicesToDo": {},
             "DevicesPending": {},
@@ -47,12 +49,12 @@ def SaveFoundDevice(DeviceName, AgentID, Filename="MMPR.json"):
         (Contents["DevicesToDo"])[DeviceName] = AgentID
         json.dump(Contents,JSONFile)
 
-def MarkDeviceAsDone(DeviceName, AgentID, ActionID, Filename="MMPR.json"):
+def MarkDeviceAsDone(DeviceName, AgentID, ActionID, DateReset, Filename="MMPR.json"):
     Contents=GetCurrentContents(Filename)
     with open(Filename, "w+") as JSONFile:
         del Contents["DevicesToDo"][DeviceName]
         del Contents["DevicesPending"][DeviceName]
-        (Contents["DevicesDone"])[DeviceName] = AgentID,ActionID
+        (Contents["DevicesDone"])[DeviceName] = AgentID,ActionID,DateReset
         json.dump(Contents,JSONFile)
 
 def MarkDeviceAsPending(DeviceName, AgentID, ActionID, Filename="MMPR.json"):
@@ -67,3 +69,14 @@ def ResetPendingDevice(DeviceName, AgentID, Filename="MMPR.json"):
         del Contents["DevicesPending"][DeviceName]
         json.dump(Contents,JSONFile)
     SaveFoundDevice(DeviceName,AgentID)
+
+def ResetDoneDevice(DeviceName, AgentID, Filename="MMPR.json"):
+    Contents=GetCurrentContents(Filename)
+    with open(Filename, "w+") as JSONFile:
+        del Contents["DevicesDone"][DeviceName]
+        json.dump(Contents,JSONFile)
+    SaveFoundDevice(DeviceName,AgentID)
+
+def GetDoneDeviceDateReset(DeviceName,Filename="MMPR.json"):
+    Contents=GetCurrentContents(Filename)
+    return Contents["DevicesDone"][DeviceName][2]
