@@ -1,0 +1,12 @@
+{
+    "LDAP": {
+        "Domain": "example.com,
+        "NetBIOS": "EXA",
+        "LDAPFriendlyDomain": "DC=example,DC=com",
+        "DCToQuery": "DomainController1",
+        "UseSSL" : 1,
+        "SSLFilename" : "ExampleCACertBase64.pem",
+        "Username": "DomainUser",
+        "Password": "DomainPassWord1234"
+    }
+}
