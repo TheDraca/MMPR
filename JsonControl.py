@@ -50,18 +50,18 @@ def SaveFoundDevice(DeviceName, AgentID, Filename="MMPR.json"):
         (Contents["DevicesToDo"])[DeviceName] = AgentID
         json.dump(Contents,JSONFile)
 
-def MarkDeviceAsDone(DeviceName, AgentID, ActionID, DateReset, Filename="MMPR.json"):
+def MarkDeviceAsDone(DeviceName, AgentID, ActionID, DateReset, Passwd, Filename="MMPR.json"):
     Contents=GetCurrentContents(Filename)
     with open(Filename, "w+") as JSONFile:
         del Contents["DevicesToDo"][DeviceName]
         del Contents["DevicesPending"][DeviceName]
-        (Contents["DevicesDone"])[DeviceName] = AgentID,ActionID,DateReset
+        (Contents["DevicesDone"])[DeviceName] = AgentID,ActionID,DateReset,Passwd
         json.dump(Contents,JSONFile)
 
-def MarkDeviceAsPending(DeviceName, AgentID, ActionID, Filename="MMPR.json"):
+def MarkDeviceAsPending(DeviceName, AgentID, ActionID, Passwd, Filename="MMPR.json"):
     Contents=GetCurrentContents(Filename)
     with open(Filename, "w+") as JSONFile:
-        (Contents["DevicesPending"])[DeviceName] = AgentID,ActionID
+        (Contents["DevicesPending"])[DeviceName] = AgentID,ActionID,Passwd
         json.dump(Contents,JSONFile)
 
 def ResetPendingDevice(DeviceName, AgentID, Filename="MMPR.json"):
@@ -81,3 +81,7 @@ def ResetDoneDevice(DeviceName, AgentID, Filename="MMPR.json"):
 def GetDoneDeviceDateReset(DeviceName,Filename="MMPR.json"):
     Contents=GetCurrentContents(Filename)
     return Contents["DevicesDone"][DeviceName][2]
+
+def GetPendingDevicePassword(DeviceName,Filename="MMPR.json"):
+    Contents=GetCurrentContents(Filename)
+    return Contents["DevicesPending"][DeviceName][2]
