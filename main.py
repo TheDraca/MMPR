@@ -1,8 +1,9 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from time import sleep
 import os
 import JsonControl
 import AddigyAPI
+import ADRead
 
 
 #Check we have the required Addigy binary
@@ -21,7 +22,7 @@ def LogAndPrint(message, File="Log.txt"):
 #Check if json file exits, if it doesn't build it
 NewAttempt=False #Variable to skip populating the json with online devices if its not a new attempt
 if os.path.exists("MMPR.json") == False:
-    #Create a empty device json file and wait for completion 
+    #Create a empty device json file and wait for completion
     while os.path.exists("MMPR.json") == False:
         JsonControl.GenJSONFile()
     print("Please fill out the JSON file then re-run this script")
@@ -134,19 +135,7 @@ while True:
                     ActionID=GetActionID(APIResponse)
 
                     #Log the device as pending so we can check on it later
-                    JsonControl.MarkDeviceAsPending(OnlineDevice["Device Name"],OnlineDevice["agentid"],ActionID)
-
-                    #Now check what happened with our reset request
-                    APIResponse=AddigyAPI.GetPasswordResetResult(ClientID,ClientSecret,OnlineDevice["agentid"],ActionID)
-        
-                    if APIResponse == "Success":
-                        LogAndPrint("INFO - Password successfully changed for: {0} AgentID: {1}".format(OnlineDevice["Device Name"],OnlineDevice["agentid"]))
-                        JsonControl.MarkDeviceAsDone(OnlineDevice["Device Name"],OnlineDevice["agentid"],ActionID,datetime.now().strftime("%d/%m/%Y %H:%M:%S"))
-                    elif APIResponse == "Pending":
-                        LogAndPrint("INFO - Device {0} reset command is pending, will be checked later".format(OnlineDevice["Device Name"]))
-                    else:
-                        LogAndPrint("ERROR - Failure for device {0} See error log for more info".format(OnlineDevice["Device Name"]))
-                        LogAndPrint("{0} - {1}".format(OnlineDevice["Device Name"],APIResponse))
+                    JsonControl.MarkDeviceAsPending(OnlineDevice["Device Name"],OnlineDevice["agentid"],ActionID,Password)
                 else:
                     LogAndPrint("WARN - Device {0} no longer online, skipping")
         
@@ -164,7 +153,23 @@ while True:
 
             if Status == "Success":
                 LogAndPrint("INFO - Pending password change now successful for: {0} AgentID: {1}".format(DeviceName,AgentID))
-                JsonControl.MarkDeviceAsDone(DeviceName,AgentID,ActionID,datetime.now().strftime("%d/%m/%Y %H:%M:%S"))
+
+                #Store when the success occured
+                PasswordChangeTime=datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+
+                if JsonControl.GetSetting("PasswordExpiry") == True:
+                    #Work out when the password is due to expire
+                    PasswordExpiryTime=datetime.strptime(PasswordChangeTime, "%d/%m/%Y %H:%M:%S") + timedelta(JsonControl.GetSetting("PasswordLifeTime"))
+                    #Set it to the same format as everything else
+                    PasswordExpiryTime=PasswordExpiryTime.strftime("%d/%m/%Y %H:%M:%S")
+                    try:
+                        #Write this to LAPS
+                        ADRead.SetLAPSPassword(DeviceName,str(JsonControl.GetPendingDevicePassword(DeviceName)),PasswordExpiryTime)
+                    except:
+                        LogAndPrint("ERROR - Can't save password {0} for {1} to LAPS attribute, devices is marked as done anyway".format(str(JsonControl.GetPendingDevicePassword(DeviceName)),DeviceName))
+                    
+                JsonControl.MarkDeviceAsDone(DeviceName,AgentID,ActionID,PasswordChangeTime,JsonControl.GetPendingDevicePassword(DeviceName))
+
             elif Status == "Pending":
                 LogAndPrint("INFO - Device {0} reset command check came back still pending".format(DeviceName))
             else: #TODO get this to trigger when command is canceled, at the moment both pending and cancled commands return 409 with the same message
