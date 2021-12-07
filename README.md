@@ -19,7 +19,7 @@ The MMPR.json file will be generated on first run, here's a quick breakdown of w
 * StaticPassword - The password set on all devices if UseStaticPassword is set to 1
 * RandomPassLength - The password length of all randomly generated passwords if UseStaticPasswords is set to 0
 * RandomPassExtraChars - Additional characters to add to what can be used to make up a random password, all passwords will included the upper and lower case alphabet plus numbers 0-9 as possibilities anyway but here you can add symbols you like (NB avoid ones that may escape the json file like “ )
-* WriteRandPassToLogs - If enabled a message will be printed and logged with the device name and the password that is being attempted to set. **CURRENTLY THE ONLY WAY TO STORE RANDOMLY GENERATED PASSWORDS**. I will in the future change this
+* WriteRandPassToLogs - If enabled a message will be printed and logged with the device name and the password that is being attempted to set. **Password will write to LAPS but on fail will always print the password regardless of this setting**
 * PasswordExpiry - Boolean value, set to 1 to have the date a password was reset stored and checked on each loop
 * PasswordLifetime - Interger in days of how long a password can live for 
 * LearnNewDevices - Boolean, only works if PasswordExpiry is enabled. Checks Addigy and adds any new devices into DevicesToDo
