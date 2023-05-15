@@ -1,6 +1,6 @@
 {
     "LDAP": {
-        "Domain": "example.com,
+        "Domain": "example.com",
         "NetBIOS": "EXA",
         "LDAPFriendlyDomain": "DC=example,DC=com",
         "DCToQuery": "DomainController1",
