@@ -25,7 +25,7 @@ if os.path.exists("MMPR.json") == False:
     #Create a empty device json file and wait for completion
     while os.path.exists("MMPR.json") == False:
         JsonControl.GenJSONFile()
-    print("Please fill out the JSON file then re-run this script")
+    print("Please fill out the MMPR JSON file then re-run this script")
     exit()
 elif os.path.exists("MMPR.json") == True and (len(JsonControl.GetDevicesToDo()) != 0 or len(JsonControl.GetDevicesPending()) != 0):
     LogAndPrint("---------------SESSION START---------------")
@@ -193,7 +193,7 @@ while True:
 
 
     if len(JsonControl.GetDevicesToDo()) != 0 or len(JsonControl.GetDevicesPending()) != 0:
-        LogAndPrint("INFO - {0} devices still to do and {1} pending... Waiting {2} secs".format(len(JsonControl.GetDevicesToDo()),len(JsonControl.GetDevicesPending()),JsonControl.GetSetting("RefreshTime")))
+        LogAndPrint("INFO - {0} devices still to do, {1} devices done and {2} pending checks... Waiting {3} secs".format(len(JsonControl.GetDevicesToDo()),len(JsonControl.GetDevicesDone()),len(JsonControl.GetDevicesPending()),JsonControl.GetSetting("RefreshTime")))
         sleep(int(JsonControl.GetSetting("RefreshTime")))
 
     else:
